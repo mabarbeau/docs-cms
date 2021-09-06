@@ -1,8 +1,9 @@
-const fs = require('fs');
-const readline = require('readline');
-const {google} = require('googleapis');
+import fs from 'fs'
+import readline from 'readline'
+import {google} from 'googleapis'
+import dotenv from 'dotenv'
 
-require('dotenv').config()
+dotenv.config()
 
 // If modifying these scopes, delete token.json.
 const SCOPES = ['https://www.googleapis.com/auth/documents.readonly'];

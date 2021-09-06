@@ -1,0 +1,8 @@
+{
+  "name": "docs-cms",
+  "version": "1.0.0",
+  "description": "Google Docs as a content management system",
+  "main": "index.js",
+  "author": "Marc Barbeau",
+  "license": "MIT"
+}

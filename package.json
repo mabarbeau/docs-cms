@@ -4,5 +4,8 @@
   "description": "Google Docs as a content management system",
   "main": "index.js",
   "author": "Marc Barbeau",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "googleapis": "39"
+  }
 }

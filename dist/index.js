@@ -1,8 +1,9 @@
-"use strict";var _fs=_interopRequireDefault(require("fs")),_readline=_interopRequireDefault(require("readline")),_googleapis=require("googleapis"),_dotenv=_interopRequireDefault(require("dotenv"));function _interopRequireDefault(a){return a&&a.__esModule?a:{default:a}}_dotenv["default"].config();// If modifying these scopes, delete token.json.
+"use strict";var _fs=_interopRequireDefault(require("fs")),_readline=_interopRequireDefault(require("readline")),_googleapis=require("googleapis"),_dotenv=_interopRequireDefault(require("dotenv")),_express=_interopRequireDefault(require("express"));function _interopRequireDefault(a){return a&&a.__esModule?a:{default:a}}_dotenv["default"].config();// Constants
+var PORT=8080,HOST="0.0.0.0",app=(0,_express["default"])();app.get("/",function(a,b){b.send("Hello World"),authorize(printDocTitle)}),app.listen(8080,HOST),console.log("Running on http://".concat(HOST,":").concat(8080));// If modifying these scopes, delete token.json.
 var SCOPES=["https://www.googleapis.com/auth/documents.readonly"],TOKEN_PATH="token.json";// The file token.json stores the user's access and refresh tokens, and is
 // created automatically when the authorization flow completes for the first
 // time.
-authorize(printDocTitle);/**
+/**
  * Create an OAuth2 client with the given credentials, and then execute the
  * given callback function.
  * @param {Object} credentials The authorization client credentials.

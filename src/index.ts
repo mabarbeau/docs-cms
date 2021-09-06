@@ -2,8 +2,26 @@ import fs from 'fs'
 import readline from 'readline'
 import {google} from 'googleapis'
 import dotenv from 'dotenv'
+import express from 'express'
 
 dotenv.config()
+
+
+// Constants
+const PORT = 8080;
+const HOST = '0.0.0.0';
+
+// App
+const app = express();
+
+app.get('/', (req, res) => {
+  res.send('Hello World');
+
+  authorize(printDocTitle);
+});
+
+app.listen(PORT, HOST);
+console.log(`Running on http://${HOST}:${PORT}`);
 
 // If modifying these scopes, delete token.json.
 const SCOPES = ['https://www.googleapis.com/auth/documents.readonly'];
@@ -11,9 +29,6 @@ const SCOPES = ['https://www.googleapis.com/auth/documents.readonly'];
 // created automatically when the authorization flow completes for the first
 // time.
 const TOKEN_PATH = 'token.json';
-
-
-authorize(printDocTitle);
 
 /**
  * Create an OAuth2 client with the given credentials, and then execute the

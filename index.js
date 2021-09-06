@@ -2,6 +2,8 @@ const fs = require('fs');
 const readline = require('readline');
 const {google} = require('googleapis');
 
+require('dotenv').config()
+
 // If modifying these scopes, delete token.json.
 const SCOPES = ['https://www.googleapis.com/auth/documents.readonly'];
 // The file token.json stores the user's access and refresh tokens, and is
@@ -9,12 +11,8 @@ const SCOPES = ['https://www.googleapis.com/auth/documents.readonly'];
 // time.
 const TOKEN_PATH = 'token.json';
 
-// Load client secrets from a local file.
-fs.readFile('credentials.json', (err, content) => {
-  if (err) return console.log('Error loading client secret file:', err);
-  // Authorize a client with credentials, then call the Google Docs API.
-  authorize(JSON.parse(content), printDocTitle);
-});
+
+authorize(printDocTitle);
 
 /**
  * Create an OAuth2 client with the given credentials, and then execute the
@@ -22,10 +20,12 @@ fs.readFile('credentials.json', (err, content) => {
  * @param {Object} credentials The authorization client credentials.
  * @param {function} callback The callback to call with the authorized client.
  */
-function authorize(credentials, callback) {
-  const {client_secret, client_id, redirect_uris} = credentials.installed;
+function authorize(callback) {
   const oAuth2Client = new google.auth.OAuth2(
-      client_id, client_secret, redirect_uris[0]);
+    process.env.GOOGLE_CLIENT_ID, 
+    process.env.GOOGLE_CLIENT_SECRET, 
+    process.env.GOOGLE_REDIRECT_URI
+  );
 
   // Check if we have previously stored a token.
   fs.readFile(TOKEN_PATH, (err, token) => {
@@ -68,13 +68,13 @@ function getNewToken(oAuth2Client, callback) {
 
 /**
  * Prints the title of a sample doc:
- * https://docs.google.com/document/d/195j9eDD3ccgjQRttHhJPymLJUCOUjs-jmwTrekvdjFE/edit
+ * https://docs.google.com/document/d/1MJ85BbYgjurQ6AyCaPpdaTHSgalzVouuBybJf5O0uos/edit
  * @param {google.auth.OAuth2} auth The authenticated Google OAuth 2.0 client.
  */
 function printDocTitle(auth) {
   const docs = google.docs({version: 'v1', auth});
   docs.documents.get({
-    documentId: '195j9eDD3ccgjQRttHhJPymLJUCOUjs-jmwTrekvdjFE',
+    documentId: '1MJ85BbYgjurQ6AyCaPpdaTHSgalzVouuBybJf5O0uos',
   }, (err, res) => {
     if (err) return console.log('The API returned an error: ' + err);
     console.log(`The title of the document is: ${res.data.title}`);

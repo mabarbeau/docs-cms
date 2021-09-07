@@ -6,7 +6,7 @@
   "author": "Marc Barbeau",
   "license": "MIT",
   "scripts": {
-    "start": "nodemon ./dist/index.js",
+    "start": "nodemon --require dotenv/config ./dist/index.js",
     "watch": "yarn build --watch",
     "build": "babel --extensions '.ts' src -d dist"
   },
@@ -21,6 +21,7 @@
   "devDependencies": {
     "@babel/preset-env": "^7.15.4",
     "@babel/preset-typescript": "^7.15.0",
+    "@types/express": "^4.17.13",
     "@types/node": "^16.7.10",
     "@typescript-eslint/eslint-plugin": "^4.31.0",
     "@typescript-eslint/parser": "^4.31.0",

@@ -20,7 +20,7 @@ async function run(collection, callback) {
   }
 }
 
-export default class Model {
+export default class {
   attributes: any
 
   constructor(attributes) {
@@ -31,7 +31,17 @@ export default class Model {
     return `${this.name.toLowerCase()}s`
   }
 
-  static async find(query) {
-    return run(this.collection, async (pages) => pages.findOne(query))
+  static async first(query) {
+    return new this(await run(this.collection, async (model) => model.findOne(query)))
+  }
+
+  static async update(query, doc) {
+    return new this(await run(this.collection, async (model) => model.replaceOne(query, doc)))
+  }
+
+  static async insert(doc) {
+    await run(this.collection, async (model) => model.insertOne(doc))
+
+    return new this(doc)
   }
 }

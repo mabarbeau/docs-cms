@@ -1,8 +1,7 @@
-import fs from 'fs'
-import readline from 'readline'
 import { google } from 'googleapis'
 import express from 'express'
-import Page from './Page'
+import Token from './models/Token'
+import Page from './models/Page'
 
 const {
   APP_PORT,
@@ -11,90 +10,101 @@ const {
 
 const app = express()
 
+const documentId = '1MJ85BbYgjurQ6AyCaPpdaTHSgalzVouuBybJf5O0uos'
+
 app.listen(APP_PORT, APP_HOST)
 
 console.log(`Running on http://${APP_HOST}:${APP_PORT}`)
 
 // If modifying these scopes, delete token.json.
-const SCOPES = ['https://www.googleapis.com/auth/documents.readonly']
-// The file token.json stores the user's access and refresh tokens, and is
-// created automatically when the authorization flow completes for the first
-// time.
-const TOKEN_PATH = 'token.json'
+const SCOPES = ['https://www.googleapis.com/auth/documents.readonly', 'https://www.googleapis.com/auth/drive.readonly']
 
-/**
- * Get and store new token after prompting for user authorization, and then
- * execute the given callback with the authorized OAuth2 client.
- * @param {google.auth.OAuth2} oAuth2Client The OAuth2 client to get token for.
- * @param {getEventsCallback} callback The callback for the authorized client.
- */
-function getNewToken(oAuth2Client, callback) {
-  const authUrl = oAuth2Client.generateAuthUrl({
-    access_type: 'offline',
-    scope: SCOPES,
-  })
-  console.log('Authorize this app by visiting this url:', authUrl)
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  })
-  rl.question('Enter the code from that page here: ', (code) => {
-    rl.close()
-    oAuth2Client.getToken(code, (err, token) => {
-      if (err) return console.error('Error retrieving access token', err)
-      oAuth2Client.setCredentials(token)
-      // Store the token to disk for later program executions
-      fs.writeFile(TOKEN_PATH, JSON.stringify(token), (e) => {
-        if (err) console.error(e)
-        console.log('Token stored to', TOKEN_PATH)
-      })
-      return callback(oAuth2Client)
-    })
-  })
-}
-
-/**
- * Create an OAuth2 client with the given credentials, and then execute the
- * given callback function.
- * @param {Object} credentials The authorization client credentials.
- * @param {function} callback The callback to call with the authorized client.
- */
-function authorize(callback) {
-  const oAuth2Client = new google.auth.OAuth2(
+function getClient() {
+  return new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET,
     process.env.GOOGLE_REDIRECT_URI,
   )
+}
 
-  // Check if we have previously stored a token.
-  fs.readFile(TOKEN_PATH, (err, token) => {
-    if (err) return getNewToken(oAuth2Client, callback)
-    oAuth2Client.setCredentials(JSON.parse(token))
-    return callback(oAuth2Client)
+function generateAuthUrl() {
+  const oAuth2Client = getClient()
+
+  const authUrl = oAuth2Client.generateAuthUrl({
+    access_type: 'offline',
+    scope: SCOPES,
+  })
+  return `<a target="__blank" href='${authUrl}'>${authUrl}</a>`
+}
+
+function getNewToken(code) {
+  return new Promise((resolve, reject) => {
+    const oAuth2Client = getClient()
+
+    oAuth2Client.getToken(code, (err, token) => {
+      if (err) reject(err)
+      if (!token.access_token) reject(token)
+      resolve(Token.insert({
+        documentId,
+        token,
+      }))
+    })
   })
 }
 
-/**
- * Prints the title of a sample doc:
- * https://docs.google.com/document/d/1MJ85BbYgjurQ6AyCaPpdaTHSgalzVouuBybJf5O0uos/edit
- * @param {google.auth.OAuth2} auth The authenticated Google OAuth 2.0 client.
- */
+function authorize(token) {
+  const oAuth2Client = getClient()
+  oAuth2Client.setCredentials(token)
+  return oAuth2Client
+}
+
 function printDocTitle(auth) {
-  const docs = google.docs({ version: 'v1', auth })
-  docs.documents.get({
-    documentId: '1MJ85BbYgjurQ6AyCaPpdaTHSgalzVouuBybJf5O0uos',
-  }, (err, res) => {
-    if (err) return console.log(`The API returned an error: ${err}`)
-    return res.data.title
+  return new Promise((resolve, reject) => {
+    const docs = google.docs({ version: 'v1', auth })
+
+    docs.documents.get({
+      documentId,
+    }, (err, res) => {
+      if (err) reject(err)
+      if (!res?.data?.title) reject(res)
+      resolve(res.data.title)
+    })
   })
+}
+
+async function getDocument(auth) {
+  const drive = google.drive({ version: 'v3', auth })
+
+  return drive.files.export(
+    {
+      fileId: documentId,
+      mimeType: 'text/html',
+    },
+  ).then(({ data }) => data)
 }
 
 app.get('/', async (_, res) => {
-  res.send(await Page.find({ title: 'Back to the Future' }))
+  res.send((await Page.first({ documentId })).attributes.html)
 })
 
-app.get('/:id', async (req, res) => {
-  authorize(printDocTitle)
+app.get('/admin', async (req, res) => {
+  const token = (await Token.first({ documentId }))?.attributes?.token
 
-  res.send(req.params)
+  if (!token) {
+    if (req.query.code) {
+      await getNewToken(req.query.code)
+    } else {
+      res.send(generateAuthUrl())
+    }
+  }
+
+  const client = authorize(token)
+
+  const title = await printDocTitle(client)
+
+  const html = await getDocument(client)
+
+  await Page.update({ documentId }, { documentId, title, html })
+
+  res.send(html)
 })

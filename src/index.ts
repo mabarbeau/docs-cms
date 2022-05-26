@@ -1,5 +1,6 @@
 import { google } from 'googleapis'
 import express from 'express'
+import { JSDOM } from 'jsdom'
 import Token from './models/Token'
 import Page from './models/Page'
 
@@ -72,7 +73,7 @@ function printDocTitle(auth) {
   })
 }
 
-async function getDocument(auth) {
+async function getDocument(auth): Promise<string> {
   const drive = google.drive({ version: 'v3', auth })
 
   return drive.files.export(
@@ -102,7 +103,13 @@ app.get('/admin', async (req, res) => {
 
   const title = await printDocTitle(client)
 
-  const html = await getDocument(client)
+  const htmlString = await getDocument(client)
+
+  const dom = new JSDOM(htmlString)
+
+  dom.window.document.title = title
+
+  const html = dom.serialize()
 
   await Page.update({ documentId }, { documentId, title, html })
 
